@@ -6,6 +6,13 @@ This package implements two dynamical system variants that are commonly used in 
 **Dynamic Textures** (i.e., linear DS) and **Kernel Dynamic Textures** (i.e., non-linear DS). In addition, 
 several approaches to measure the similarity between dynamical systems are implemented. 
 
+Tutorial
+--------
+
+Take a look at the included ```pydstk-Tutorial.ipynb``` IPython notebook (which is structured
+as a tutorial to get started with pydstk).
+
+
 Requirements
 ------------
 
