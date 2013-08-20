@@ -454,6 +454,8 @@ class LinearDS(object):
             raise ErrorDS("System not ready for conversion to JCF!")
 
         P = self.computeJCFTransform(self._Ahat, self._Chat)
+        
+        assert isinstance(P, numpy.ndarray) == True
 
         self._ChatJCF = self._Chat.dot(np.linalg.inv(P))
         self._AhatJCF = P.dot(self._Ahat.dot(np.linalg.inv(P)))
@@ -540,8 +542,8 @@ class LinearDS(object):
         if not mode.find('q') >= 0:
             stdS = np.sqrt(initS0)
             (U, S, V) = np.linalg.svd(Qhat, full_matrices=False)
-            Bhat = U*np.diag(np.sqrt(S))
-
+            Bhat = U.dot(np.diag(np.sqrt(S)))
+         
         t = 0
         Xt = np.zeros((nStates, 1))
         while (tau<0) or (t<tau):
@@ -552,7 +554,7 @@ class LinearDS(object):
             elif t == 0:
                 Xt1 = initM0;
                 if mode.find('q') < 0:
-                    Xt1 += stdS*np.random.randn(nStates)
+                    Xt1 += np.multiply(stdS.ravel(), np.random.randn(nStates))
             # any further states (if mode != 's')
             else:
                 Xt1 = np.inner(Ahat, Xt)
@@ -574,6 +576,9 @@ class LinearDS(object):
             Xt = Xt1
             t += 1
 
+        #print I.shape
+        #print X.shape
+        #raw_input()
         return (I, X)
 
 

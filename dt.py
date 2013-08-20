@@ -137,7 +137,7 @@ def main(argv=None):
 
         # synthesize output
         if opt.doSynth:
-           dataSyn, _ = dt.synthesize(tau=50, mode='s')
+           dataSyn, _ = dt.synthesize(tau=dataSiz[-1], mode='s')
 
         # show a movie of the synthesis result
         if opt.doMovie > 0:
