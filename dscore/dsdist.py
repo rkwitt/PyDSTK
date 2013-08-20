@@ -237,8 +237,8 @@ def ldsMartinDistance(lds1, lds2, N=20):
             O1O2 = C1C2
             O1O1 = C1C1
             O2O2 = C2C2
-            a1t = A1
-            a2t = A2
+            a1t = np.asmatrix(A1)
+            a2t = np.asmatrix(A2)
         else:
             O1O2 = O1O2 + a1t.T*C1C2*a2t
             O1O1 = O1O1 + a1t.T*C1C1*a1t

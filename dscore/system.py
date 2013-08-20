@@ -45,7 +45,6 @@ from sklearn.cluster import KMeans
 from sklearn.utils.extmath import randomized_svd
 from sklearn.metrics.pairwise import euclidean_distances
 
-
 # import pyds package contents
 import dsutil.dsinfo as dsinfo
 import dsutil.dsutil as dsutil
@@ -189,7 +188,7 @@ class NonLinearDS(object):
 class LinearDS(object):
     """Implements a linear dynamical system (LDS) of the form:
 
-    x_{t+1} = A*x_{t} + w_{t}
+    x_{t}   = A*x_{t-1} + w_{t}
     y_{t}   = C*x_{t} + v_{t}
 
     Parameter details (in terms of matrix dimensions):
@@ -242,18 +241,18 @@ class LinearDS(object):
 
         Parameters:
         -----------
-        A : np.array, shape = (N, N)
+        A : numpy.ndarray, shape = (N, N)
             Input matrix (e.g., state matrix)
 
         Returns:
         --------
-        J : np.ndarray, shape = (N, N)
+        J : numpy.ndarray, shape = (N, N)
             A in real Jordan form.
 
-        Q : np.ndarray, shape = (N, N)
+        Q : numpy.ndarray, shape = (N, N)
             Similarity transform, s.t., J = inv(Q)*A*Q
 
-        X : np.ndarray, shape = (N, )
+        X : numpy.ndarray, shape = (N, )
             Indicator array for real/imag. parts
 
         Note: This function is based on A. Ravichandran's MATLAB function
@@ -262,10 +261,9 @@ class LinearDS(object):
 
         http://cis.jhu.edu/~avinash/projects/DTBox
 
-
         (Be carefull with that function, since it's generally advised
         to avoid numerical Jordan form computations in practice due to
-        stability reasons.)
+        stability issues.)
 
         Algorithmic strategy:
         ---------------------
@@ -320,7 +318,9 @@ class LinearDS(object):
                 J[cnt:cnt+2,cnt:cnt+2] = B
                 X[cnt], X[cnt+1] = 1, 0
                 cnt += 2
-        return (J, np.linalg.inv(Q), X)
+        
+        assert isinstance(J, np.ndarray) == True
+        return (J, np.asarray(np.linalg.inv(Q)), X)
 
 
     @staticmethod
@@ -388,15 +388,15 @@ class LinearDS(object):
 
         Parameters:
         -----------
-        A : np.ndarray, shape = (N, N)
+        A : numpy.ndarray, shape = (N, N)
             Input state transition matrix.
 
-        C : np.ndarray, shape = (D, N)
+        C : numpy.ndarray, shape = (D, N)
             Input observation matrix.
 
         Returns:
         --------
-        P : np.ndarray, shape = (N, N)
+        P : numpy.ndarray, shape = (N, N)
             Transform to convert the LDS, represented by (A, C)
             into JCF (Ac, Cc), s.t.
 
@@ -439,11 +439,15 @@ class LinearDS(object):
         x[-N:] = colSumC
 
         P = (np.linalg.pinv(a)*np.asmatrix(x).T).reshape((5,5),order='F')
-        return P
+        return np.asarray(P)
 
 
     def convertToJCF(self):
         """Converts the LDS to JCF.
+        
+        Returns
+        -------
+            Internal update of the parameters.
         """
 
         if not self.check():
@@ -451,14 +455,12 @@ class LinearDS(object):
 
         P = self.computeJCFTransform(self._Ahat, self._Chat)
 
-        self._ChatJCF = self._Chat*np.linalg.inv(P)
-        self._AhatJCF = P*self._Ahat*np.linalg.inv(P)
-        self._XhatJCF = P*self._Xhat
-        self._initM0JCF = P*self._initM0
+        self._ChatJCF = self._Chat.dot(np.linalg.inv(P))
+        self._AhatJCF = P.dot(self._Ahat.dot(np.linalg.inv(P)))
+        self._XhatJCF = P.dot(self._Xhat)
+        self._initM0JCF = P.dot(self._initM0)
 
-        #TODO: Transform the remaining parameters (required for synthesis)!
-
-
+  
     def check(self):
         """Check validity of LDS parameters.
 
@@ -495,10 +497,10 @@ class LinearDS(object):
 
         Returns
         -------
-        I : numpy array, shape = (D, tau)
+        I : numpy.ndarray, shape = (D, tau)
             Matrix with N D-dimensional column vectors as observations.
 
-        X : numpy array, shape = (N, tau)
+        X : numpy.ndarray, shape = (N, tau)
             Matrix with N tau-dimensional state vectors.
         """
 
@@ -515,6 +517,10 @@ class LinearDS(object):
         initM0 = self._initM0
         initS0 = self._initS0
         nStates = self._nStates
+
+        assert isinstance(Ahat, np.ndarray) == True
+        assert isinstance(Chat, np.ndarray) == True
+        assert isinstance(Xhat, np.ndarray) == True
 
         if mode is None:
             raise ErrorDS("No synthesis mode specified!")
@@ -546,24 +552,26 @@ class LinearDS(object):
             elif t == 0:
                 Xt1 = initM0;
                 if mode.find('q') < 0:
-                    Xt1 += stdS*np.rand(nStates)
+                    Xt1 += stdS*np.random.randn(nStates)
             # any further states (if mode != 's')
             else:
-                Xt1 = Ahat*Xt
+                Xt1 = np.inner(Ahat, Xt)
                 if not mode.find('q') >= 0:
-                    Xt1 = Xt1 + Bhat*np.rand(nStates)
+                    Xt1 = Xt1 + np.inner(Bhat, np.random.rand(nStates))
 
             # synthesizes image
-            It = Chat*Xt1 + np.reshape(Yavg,(len(Yavg),1))
-
+            It = np.inner(Chat, Xt1) + Yavg
+            
             # adds observation noise
             if mode.find('r') >= 0:
-                It += stdR*np.randn(length(Yavg))
+                It += stdR*np.random.randn(length(Yavg))
 
             # save ...
             Xt = Xt1;
+            
             I[:,t] = It.reshape(-1)
             X[:,t] = Xt.reshape(-1)
+            Xt = Xt1
             t += 1
 
         return (I, X)
@@ -577,8 +585,12 @@ class LinearDS(object):
 
         Parameters
         ----------
-        Y : numpy array, shape = (N, D)
+        Y : numpy.ndarray, shape = (N, D)
             Input data with D observations as N-dimensional column vectors.
+            
+        Returns
+        -------
+            Updates the LinearDS system paramters.    
         """
 
         nStates = self._nStates
@@ -604,9 +616,12 @@ class LinearDS(object):
                 (U, S, V) = np.linalg.svd(Y, full_matrices=0)
 
         Chat = U[:,0:nStates]
-        Xhat = (np.diag(S)[0:nStates,0:nStates] * np.asmatrix(V[0:nStates,:]))
+        Xhat = np.diag(S)[0:nStates,0:nStates].dot(V[0:nStates,:])
+        
+        assert isinstance(Chat, np.ndarray) == True      
+        assert isinstance(Xhat, np.ndarray) == True      
 
-        initM0 = np.mean(Xhat[:,0], axis=1)
+        initM0 = Xhat[:,0]
         initS0 = np.zeros((nStates, 1))
 
         pind = range(tau-1);
@@ -614,11 +629,15 @@ class LinearDS(object):
         phi1 = Xhat[:,pind]
         phi2 = Xhat[:,[i+1 for i in pind]]
 
-        Ahat = phi2*np.linalg.pinv(phi1)
-        Vhat = phi2-Ahat*phi1;
-        Qhat = 1.0/Vhat.shape[1] * Vhat*Vhat.T
+        Ahat = phi2.dot(np.linalg.pinv(phi1))
+        Vhat = phi2-Ahat.dot(phi1)
+        Qhat = 1.0/Vhat.shape[1] * Vhat.dot(Vhat.T)
 
-        errorY = Y - Chat*Xhat
+        assert isinstance(Ahat, np.ndarray) == True      
+        assert isinstance(Vhat, np.ndarray) == True      
+        assert isinstance(Qhat, np.ndarray) == True      
+
+        errorY = Y - Chat.dot(Xhat)
         Rhat = np.var(errorY.ravel())
 
         # save parameters
@@ -642,15 +661,15 @@ class LinearDS(object):
 
         Parameters:
         -----------
-        lds1 : lds instance
+        lds1 : LinearDS instance
             Target LDS
 
-        lds2: lds instance
+        lds2: LinearDS instance
             Source LDS
 
         Returns:
         --------
-        lds : lds instance
+        lds : LinearDS instance
             New instance of lds2 (with UPDADED parameters)
 
         err : float
@@ -671,8 +690,17 @@ class LinearDS(object):
         lds._Ahat = F.T*lds2._Ahat*F
         lds._Qhat = F.T*lds2._Qhat*F
         lds._Rhat = lds2._Rhat
-        lds._initM0 = F.T*lds2._initM0
+        
+        lds._initM0 = F.T*np.asmatrix(lds2._initM0).T
         lds._initS0 = np.diag(F.T*np.diag(lds._initS0.ravel())*F)
+        
+        # make sure, everything is a numpy.ndarray
+        lds._initM0 = np.asarray(lds._initM0)
+        lds._initS0 = np.asarray(lds._initS0)
+        lds._Chat = np.asarray(lds._Chat)
+        lds._Ahat = np.asarray(lds._Ahat)
+        lds._Rhat = np.asarray(lds._Rhat)
+        lds._Qhat = np.asarray(lds._Qhat)
 
         err = 0
         err += np.sum(np.abs(lds2._Chat.ravel() - lds1._Chat.ravel()))
@@ -722,7 +750,11 @@ class OnlineNonLinearDS(NonLinearDS):
 
 
     def hasChanged(self):
-        """Did the DS change ?
+        """Did the OnlineNonLinearDS change ?
+        
+        Returns
+        -------
+            True if changes, False otherwise.
         """
         return self._cnt == self._nShift
 
@@ -732,7 +764,7 @@ class OnlineNonLinearDS(NonLinearDS):
 
         Parameters:
         -----------
-        x : numpy.array, shape = (N, )
+        x : numpy.ndarray, shape = (N, )
             New data vector.
         """
 
@@ -787,7 +819,11 @@ class OnlineLinearDS(LinearDS):
 
 
     def hasChanged(self):
-        """Did the DS change ?
+        """Did the OnlineLinearDS change ?
+        
+        Returns
+        -------
+            True if changed, False otherwise.
         """
         return self._cnt == self._nShift
 
@@ -797,7 +833,7 @@ class OnlineLinearDS(LinearDS):
 
         Parameters:
         -----------
-        x : numpy.array, shape = (N, )
+        x : numpy.ndarray, shape = (N, )
             New data vector.
         """
 

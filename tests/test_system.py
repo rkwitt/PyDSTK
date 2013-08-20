@@ -79,7 +79,7 @@ def test_LinearDS_suboptimalSysID():
 
     baseLDSFile = os.path.join(TESTBASE, "data/data1-dt-5c-center.pkl")
     baseLDS = pickle.load(open(baseLDSFile))
-
+    
     err = ldsMartinDistance(lds, baseLDS, N=20)
     np.testing.assert_almost_equal(err, 0, 2)
 
@@ -118,6 +118,22 @@ def test_computeRJF_part0():
         np.testing.assert_almost_equal(np.linalg.norm(J-Ac, 'fro'), 0, 2)
 
 
+def test_stateSpaceMap():
+    """Test state-space mapping between two LDSs.
+    """
+    dataFile = os.path.join(TESTBASE, "data/data1.txt")
+    data, _ = loadDataFromASCIIFile(dataFile)
+
+    lds0 = LinearDS(5, False, False)
+    lds1 = LinearDS(5, False, False)
+    
+    lds0.suboptimalSysID(data)
+    lds1.suboptimalSysID(data)
+
+    (_, err) = LinearDS.stateSpaceMap(lds0, lds1)
+    print err
+
+
 def test_computeRJF_part1():
     """Test computeRJF() with MATLAB example.
     """
@@ -127,6 +143,10 @@ def test_computeRJF_part1():
                     [-1,1,-1],
                     [2,4,5]])
     J,T,_ = LinearDS.computeRJF(A)
+    
+    np.alltrue(isinstance(J, np.ndarray))
+    np.alltrue(isinstance(T, np.ndarray))
+
     ref = np.asarray([[3,0,0],
                       [0,2,0],
                       [0,0,2]])
@@ -141,28 +161,36 @@ def test_convertToJCF():
     dsFile = os.path.join(TESTBASE, "data/data1-dt-5c-center.pkl")
     ds = pickle.load(open(dsFile))
 
-    # extract real (A,C) pair
-    A,C,N = ds._Ahat, ds._Chat, ds._nStates
-    P = LinearDS.computeJCFTransform(A,C)
+    # extract real (A, C) pair
+    A = ds._Ahat
+    C = ds._Chat
+    N = ds._nStates
+    P = LinearDS.computeJCFTransform(A, C)
 
-    # compute JCF of original LDS's (A,C) pair
-    Ac = P*A*np.linalg.inv(P)
-    Cc = C*np.linalg.inv(P)
+    # compute JCF of original LDS's (A, C) pair
+    Ac = P.dot(A.dot(np.linalg.inv(P))) # PAP^-1
+    Cc = C.dot(np.linalg.inv(P)) # CP^-1
 
     # create random orthogonal matrices
     for i in range(100):
-        Q = orth(np.random.random((N,N)))
+        Q = orth(np.random.random((N, N)))
 
-        # apply similarity transform on (A,C)
+        # apply similarity transform on (A, C)
         tC = C.dot(np.linalg.inv(Q))
-        tA = Q*A*np.linalg.inv(Q)
+        tA = Q.dot(A.dot(np.linalg.inv(Q)))
 
+        assert isinstance(tC, np.ndarray) == True
+        assert isinstance(tA, np.ndarray) == True
+        
         # now, compute the JCF transform and apply it
-        R = LinearDS.computeJCFTransform(tA,tC)
-        Ar = R*tA*np.linalg.inv(R)
-        Cr = tC*np.linalg.inv(R)
+        R = LinearDS.computeJCFTransform(tA, tC)
+        Ar = R.dot(tA.dot(np.linalg.inv(R)))
+        Cr = tC.dot(np.linalg.inv(R))
+        
+        assert isinstance(Ar, np.ndarray) == True
+        assert isinstance(Cr, np.ndarray) == True
 
-        # ensure that (A,C)'s remain equal
+        # ensure that (A, C)'s remain equal
         errA = np.linalg.norm(Ac-Ar, 'fro')
         errC = np.linalg.norm(Cc-Cr, 'fro')
         np.testing.assert_almost_equal(errA, 0, 2)
@@ -240,5 +268,9 @@ def test_nldsMartinDistance():
 
 
 if __name__ == "__main__":
-    test_NonLinearDS_suboptimalSysID()
+    #test_NonLinearDS_suboptimalSysID()
+    test_computeRJF_part1()
+    test_convertToJCF()
+    test_LinearDS_suboptimalSysID()
+    #test_stateSpaceMap()
     pass
