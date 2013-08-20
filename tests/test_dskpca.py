@@ -41,7 +41,7 @@ TESTBASE = os.path.dirname(__file__)
 def test_rbfK_centered():
     par = RBFParam()
     par._kCen = True
-    
+
     dataFile = os.path.join(TESTBASE, "data/random.txt")
     data = np.genfromtxt(dataFile, dtype=np.double)
 
@@ -49,15 +49,15 @@ def test_rbfK_centered():
 
     kernelFile = os.path.join(TESTBASE, "data/random-rbf-center.txt")
     kernel = np.genfromtxt(kernelFile, dtype=np.double)
-    
+
     err = np.linalg.norm(kernel - par._kMat, 'fro')
-    np.testing.assert_almost_equal(err, 0, 4)
+    np.testing.assert_almost_equal(err, 0, 2)
 
 
 def test_rbfK_noncentered():
     par = RBFParam()
     par._kCen = False
-    
+
     dataFile = os.path.join(TESTBASE, "data/random.txt")
     data = np.genfromtxt(dataFile, dtype=np.double)
 
@@ -65,26 +65,29 @@ def test_rbfK_noncentered():
 
     kernelFile = os.path.join(TESTBASE, "data/random-rbf-nocenter.txt")
     kernel = np.genfromtxt(kernelFile, dtype=np.double)
-    
+
     err = np.linalg.norm(kernel - par._kMat, 'fro')
-    np.testing.assert_almost_equal(err, 0, 4)
+    np.testing.assert_almost_equal(err, 0, 2)
 
 
 def test_kpca():
     dataFile = os.path.join(TESTBASE, "data/data1.txt")
     data, _ = loadDataFromASCIIFile(dataFile)
-    
+
     kpcaP = KPCAParam()
     kpcaP._kPar = RBFParam()
     kpcaP._kPar._kCen = True
     kpcaP._kFun = rbfK
 
     X = kpca(data, 5, kpcaP)
-    
+
     baseKPCACoeffFile = os.path.join(TESTBASE, "data/data1-rbf-kpca-5c-center.txt")
     baseKPCACoeff = np.genfromtxt(baseKPCACoeffFile, dtype=np.double)
-    
-    # don't care about the sign 
+
+    # don't care about the sign
     err = np.linalg.norm(np.abs(baseKPCACoeff)-np.abs(X), 'fro')
-    np.testing.assert_almost_equal(err, 0, 4)
-    
+    np.testing.assert_almost_equal(err, 0, 2)
+
+
+if __name__ == "__main__":
+    test_kpca()

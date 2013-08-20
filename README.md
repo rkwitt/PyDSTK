@@ -1,6 +1,8 @@
 pydstk
 ======
 
+[![Build Status](https://travis-ci.org/TubeTK/pydstk.png?branch=master)](https://travis-ci.org/TubeTK/pydstk)
+
 Python (Linear / Non-Linear) Dynamical Systems Toolkit (pydstk). 
 This package implements two dynamical system variants that are commonly used in computer vision: 
 **Dynamic Textures** (i.e., linear DS) and **Kernel Dynamic Textures** (i.e., non-linear DS). In addition, 
@@ -22,12 +24,14 @@ Requirements
 4. [**SimpleITK**](http://www.simpleitk.org) (Python wrapping)
 5. [**nose**](https://nose.readthedocs.org/en/latest/)
 6. [**termcolor**](https://pypi.python.org/pypi/termcolor)
+7. [**scikit-learn**](http://scikit-learn.org/stable/)
 
 To check if those packages are available on your system, try
 ```python
 import cv2
 import scipy
 import numpy
+import sklearn
 import termcolor
 import SimpleITK
 ```
