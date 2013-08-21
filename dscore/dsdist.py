@@ -53,15 +53,15 @@ def nldsIP(nlds1, nlds2):
 
     Parameters:
     -----------
-    nlds1 : nlds instance
+    nlds1 : dscore.NonLinearDS instance
         First NLDS model.
 
-    nlds2 : nlds instance
+    nlds2 : dscore.NonLinearDS instance
         Second NLDS model.
 
     Returns:
     --------
-    F : numpy.array, shape = (D, D)
+    F : numpy.ndarray, shape = (D, D)
         Inner product between KCPA components.
     """
 
@@ -74,7 +74,7 @@ def nldsIP(nlds1, nlds2):
 
     N1 = A1.shape[0]
     N2 = A2.shape[0]
-
+    
     if nlds1._kpcaParams._kPar._kCen:
         A1n = copy.copy(A1)
         A2n = copy.copy(A2)
@@ -95,7 +95,8 @@ def nldsIP(nlds1, nlds2):
 
     # inner-product (in feature space) between Gaussian kernels (updates kPar)
     nlds1._kpcaParams._kFun(Y1/sig1s, Y2/sig2s, kPar)
-    F = np.asmatrix(A1).T*kPar._kMat*A2
+
+    F = A1.T.dot(kPar._kMat.dot(A2))
     return F
 
 
@@ -121,10 +122,10 @@ def nldsMartinDistance(nlds1, nlds2, N=20):
 
     Parameters:
     -----------
-    nlds1: core.nlds instance
+    nlds1: dscore.NonLinearDS instance
         First NLDS model.
 
-    nlds2: core.lds instance
+    nlds2: dscore.NonLinearDS instance
         Second NLDS model.
 
     N : int (default: 20)
@@ -144,6 +145,8 @@ def nldsMartinDistance(nlds1, nlds2, N=20):
     dx2 = len(nlds2._initX0)
 
     C1C2 = nldsIP(nlds1, nlds2)
+    assert isinstance(C1C2, np.ndarray) == True
+    
     C1C1 = np.eye(dx1)
     C2C2 = np.eye(dx2)
 
@@ -159,12 +162,12 @@ def nldsMartinDistance(nlds1, nlds2, N=20):
             a1t = Ahat1
             a2t = Ahat2
         else:
-            O1O2 = O1O2 + a1t.T*C1C2*a2t
-            O1O1 = O1O1 + a1t.T*C1C1*a1t
-            O2O2 = O2O2 + a2t.T*C2C2*a2t
+            O1O2 = O1O2 + a1t.T.dot(C1C2.dot(a2t))
+            O1O1 = O1O1 + a1t.T.dot(C1C1.dot(a1t))
+            O2O2 = O2O2 + a2t.T.dot(C2C2.dot(a2t))
             if i != N-1:
-                a1t = a1t*Ahat1
-                a2t = a2t*Ahat2
+                a1t = a1t.dot(Ahat1)
+                a2t = a2t.dot(Ahat2)
 
         # we are at the end
         if i == N-1:
@@ -195,10 +198,10 @@ def ldsMartinDistance(lds1, lds2, N=20):
 
     Parameters:
     -----------
-    lds1: core.lds instance
+    lds1: dscore.LinearDS instance
         First LDS model.
 
-    lds2: core.lds instance
+    lds2: dscore.LinearDS instance
         Second LDS model.
 
     N : int (default: 20)
@@ -220,9 +223,15 @@ def ldsMartinDistance(lds1, lds2, N=20):
     A1 = lds1._Ahat
     A2 = lds2._Ahat
 
-    C1C1 = np.asmatrix(C1).T*C1
-    C2C2 = np.asmatrix(C2).T*C2
-    C1C2 = np.asmatrix(C1).T*C2
+    # ensure numpy.ndarray
+    assert isinstance(C1, np.ndarray) == True
+    assert isinstance(C2, np.ndarray) == True
+    assert isinstance(A1, np.ndarray) == True
+    assert isinstance(A2, np.ndarray) == True
+    
+    C1C1 = C1.T.dot(C1)
+    C2C2 = C2.T.dot(C2)
+    C1C2 = C1.T.dot(C2)
 
     dx1 = len(lds1._initM0)
     dx2 = len(lds2._initM0)
@@ -237,15 +246,15 @@ def ldsMartinDistance(lds1, lds2, N=20):
             O1O2 = C1C2
             O1O1 = C1C1
             O2O2 = C2C2
-            a1t = np.asmatrix(A1)
-            a2t = np.asmatrix(A2)
+            a1t = A1
+            a2t = A2
         else:
-            O1O2 = O1O2 + a1t.T*C1C2*a2t
-            O1O1 = O1O1 + a1t.T*C1C1*a1t
-            O2O2 = O2O2 + a2t.T*C2C2*a2t
+            O1O2 = O1O2 + a1t.T.dot(C1C2.dot(a2t))
+            O1O1 = O1O1 + a1t.T.dot(C1C1.dot(a1t))
+            O2O2 = O2O2 + a2t.T.dot(C2C2.dot(a2t))
             if i != N-1:
-                a1t = a1t*A1
-                a2t = a2t*A2
+                a1t = a1t.dot(A1)
+                a2t = a2t.dot(A2)
 
         # we are at the end
         if i == N-1:

@@ -96,12 +96,21 @@ def test_NonLinearDS_suboptimalSysID():
     kpcaP._kPar._kCen = True
     kpcaP._kFun = rbfK
 
+    baseNLDSFile = os.path.join(TESTBASE, "data/data1-rbf-kdt-5c-center.pkl")
+    baseNLDS = pickle.load(open(baseNLDSFile))
+    
     nlds = NonLinearDS(5, kpcaP, False)
     nlds.suboptimalSysID(data)
 
-    baseNLDSFile = os.path.join(TESTBASE, "data/data1-rbf-kdt-5c-center.pkl")
-    baseNLDS = pickle.load(open(baseNLDSFile))
-
+    # make sure all parameters are of type numpy.ndarray
+    assert isinstance(nlds._Ahat, np.ndarray) == True
+    assert isinstance(nlds._Qhat, np.ndarray) == True
+    assert isinstance(nlds._Xhat, np.ndarray) == True
+    assert isinstance(nlds._Vhat, np.ndarray) == True
+    assert isinstance(nlds._initX0, np.ndarray) == True
+    assert isinstance(nlds._initM0, np.ndarray) == True
+    assert isinstance(nlds._initS0, np.ndarray) == True
+    
     err = NonLinearDS.naiveCompare(baseNLDS, nlds)
     np.testing.assert_almost_equal(err, 0, 2)
 
@@ -220,7 +229,7 @@ def test_ldsMartinDistance():
     # compute distances A<->A, A<->B
     dAA = ldsMartinDistance(ldsA, ldsA, 20)
     dAB = ldsMartinDistance(ldsA, ldsB, 20)
-
+    
     truth = np.genfromtxt(os.path.join(TESTBASE, "data/ldsMartinDistanceData1Data2.txt"))
     np.testing.assert_almost_equal(dAB, truth, 2)
     np.testing.assert_almost_equal(dAA, 0, 2)
@@ -263,14 +272,11 @@ def test_nldsMartinDistance():
 
     truth = np.genfromtxt(os.path.join(TESTBASE,
       "data/nldsMartinDistanceData1Data2.txt" ))
+
     np.testing.assert_almost_equal(dAA, 0, 2)
     np.testing.assert_almost_equal(dAB, truth, 2)
 
 
 if __name__ == "__main__":
-    #test_NonLinearDS_suboptimalSysID()
-    test_computeRJF_part1()
     test_convertToJCF()
-    test_LinearDS_suboptimalSysID()
-    #test_stateSpaceMap()
     pass

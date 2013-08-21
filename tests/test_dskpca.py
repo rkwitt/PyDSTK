@@ -80,7 +80,11 @@ def test_kpca():
     kpcaP._kFun = rbfK
 
     X = kpca(data, 5, kpcaP)
-
+    
+    assert isinstance(X, np.ndarray) == True 
+    assert isinstance(kpcaP._kPar._kMat, np.ndarray) == True
+    assert isinstance(kpcaP._kPar._trS0, np.ndarray) == True
+    
     baseKPCACoeffFile = os.path.join(TESTBASE, "data/data1-rbf-kpca-5c-center.txt")
     baseKPCACoeff = np.genfromtxt(baseKPCACoeffFile, dtype=np.double)
 

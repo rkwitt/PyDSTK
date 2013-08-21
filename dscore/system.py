@@ -75,7 +75,6 @@ class NonLinearDS(object):
     def __init__(self, nStates, kpcaParams, verbose=False):
         """Initialize nlds instance.
 
-
         nStates : int
             Number of KDT states.
 
@@ -104,16 +103,16 @@ class NonLinearDS(object):
     def naiveCompare(nlds1, nlds2):
         """Compare NLDS parameters (in a naive Frobenius norm manner).
 
-        Parameters:
-        -----------
-        nlds1 : NonLineDS instance
+        Parameters
+        ----------
+        nlds1 : NonLineaDS instance
             Target LDS
 
         nlds2: NonLinearDS instance
             Source LDS
 
-        Returns:
-        --------
+        Returns
+        -------
         err : float
             Sum of the Frobenius norms of the difference matrices.
         """
@@ -133,8 +132,8 @@ class NonLinearDS(object):
         Currently, this routine only checks if the parameters are set, but not
         if they are actually valid parameters!
 
-        Returns:
-        --------
+        Returns
+        -------
         validity : boolean
             True if parameters are valid, False otherwise.
         """
@@ -150,9 +149,9 @@ class NonLinearDS(object):
 
         Updates the NLDS parameters.
 
-        Parameters:
-        -----------
-        Y : numpy array, shape = (N, D)
+        Parameters
+        ----------
+        Y : numpy.ndarray, shape = (N, D)
             Input data.
         """
 
@@ -168,9 +167,10 @@ class NonLinearDS(object):
         # estimate rest of parameters
         _, tau = Y.shape
 
-        Ahat = Xhat[:,1:tau]*np.linalg.pinv(Xhat[:,0:tau-1])
-        Vhat = Xhat[:,1:tau]-Ahat*Xhat[:,0:tau-1]
-        Qhat = (Vhat*Vhat.T)/(tau-1)
+        Ahat = Xhat[:,1:tau].dot(np.linalg.pinv(Xhat[:,0:tau-1]))
+        Vhat = Xhat[:,1:tau]-Ahat.dot(Xhat[:,0:tau-1])
+        Qhat = (Vhat.dot(Vhat.T))/(tau-1)
+        
         initX0 = Xhat[:,0]
         initM0 = np.mean(Xhat, axis=1)
         initS0 = np.diag(np.cov(Xhat))
@@ -438,7 +438,7 @@ class LinearDS(object):
         x = np.zeros(N**2+len(colSumC),)
         x[-N:] = colSumC
 
-        P = (np.linalg.pinv(a)*np.asmatrix(x).T).reshape((5,5),order='F')
+        P = np.linalg.pinv(a).dot(x.T).reshape((5,5),order='F')
         return np.asarray(P)
 
 

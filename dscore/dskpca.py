@@ -47,6 +47,15 @@ from dsutil.dsutil import Timer
 
 class RBFParam:
     """Class for RBF kernel parametes.
+    
+    Member variables are:
+    
+        _kCen : boolean - Kernel centering
+        _kMat : numpy.ndarray, shape (D, D) - Kernel matrix
+        _sig2 : float - Kernel width
+        _trS0 : numpy.ndarray, shape = (D, ) - Sum over kernel columns
+        _teS0 : numpy.ndarray, shape = (D, ) - Sum over kernel rows
+        _trS1 : float - Sum over ALL kernel values
     """
 
     def __init__(self):
@@ -63,8 +72,8 @@ class KPCAParam:
 
     Member variables are:
 
-        _A : numpy.array, shape = (N, k) - KPCA weight matrix
-        _l : numpy.array, shape = (k, )  - Eigenvalues of kernel matrix
+        _A : numpy.ndarray, shape = (N, k) - KPCA weight matrix
+        _l : numpy.ndarray, shape = (k, )  - Eigenvalues of kernel matrix
         _kPar : Kernel parameters (depends on kernel)
         _kFun : Kernel function (depends on kernel)
     """
@@ -88,12 +97,12 @@ def rbfK(X, Y, params):
     In case the setting for sigma2 is empty, we compute sigma2 as
     sigma2 = median {||x_i - y_j||^2}_{ij}).
 
-    Parameters:
-    -----------
-    X : numpy array, shape = (N, D)
+    Parameters
+    ----------
+    X : numpy.ndarray, shape = (N, D)
         D N-dimensional input vectors.
 
-    Y : numpy array, shape = (M, D)
+    Y : numpy.ndarray, shape = (M, D)
         D M-dimensional input vectors.
 
     params : RBFParam instance
@@ -116,7 +125,7 @@ def rbfK(X, Y, params):
         In case we are computing a testing kernel, the following fields will
         also be updated when _kCen is True:
 
-            _teS0 : numpy.array, shape = (D,) - Sum over kernel rows
+            _teS0 : numpy.ndarray, shape = (D,) - Sum over kernel rows
 
         If the field _sig2 is set, it will be used as the RBF kernel width;
         If it is not set (None), it will be computed (see above) and the
@@ -154,6 +163,7 @@ def rbfK(X, Y, params):
             kMat = (kMat - np.tile(trS0, (n, 1)) -
                     np.tile(np.asmatrix(trS0).T, (1, n)) +
                     trS1)
+
             params._trS0 = trS0
             params._trS1 = trS1
 
@@ -167,7 +177,7 @@ def rbfK(X, Y, params):
             kMat = kMat - np.tile(trS0, (n, 1)) - np.tile(teS0, (1, m)) + trS1
             params._teS0 = teS0
 
-    params._kMat = kMat
+    params._kMat = np.asarray(kMat)
 
 
 def normalize(A, l, tol=1e-6):
@@ -182,14 +192,15 @@ def normalize(A, l, tol=1e-6):
     NOTE: The routine UPDATES the columns of the A matrix, i.e., the
     entries are updated in place!
 
-    Parameters:
-    -----------
-    A : numpy.array, shape = (N, K)
+    Parameters
+    ----------
+    A : numpy.ndarray, shape = (N, K)
         Matrix of eigenvectors (alphas).
 
-    l : numpy.array, shape = (K, )
+    l : numpy.ndarray, shape = (K, )
         Vector of eigenvalues (lambdas).
     """
+    
     n, m = A.shape
 
     ltTol = np.where(np.abs(l)<tol)[0]
@@ -212,9 +223,9 @@ def kpca(Y, k, params):
 
     for technical details on KPCA.
 
-    Parameters:
-    -----------
-    Y : numpy array, shape = (N, D)
+    Parameters
+    ----------
+    Y : numpy.ndarray, shape = (N, D)
         Input matrix of D N-dimensional signals.
 
     k : int
@@ -226,9 +237,9 @@ def kpca(Y, k, params):
         Upon completion, the params is updated. The following fields
         are set:
 
-            _data : numpy.array, shape = (N, D) - Original data
-            _A : numpy.array, shape = (N, k)    - KPCA weight matrix
-            _l : numpy.array, shape = (k,)      - Eigenvalues of kernel matrix
+            _data : numpy.ndarray, shape = (N, D) - Original data
+            _A : numpy.ndarray, shape = (N, k)    - KPCA weight matrix
+            _l : numpy.ndarray, shape = (k,)      - Eigenvalues of kernel matrix
 
         The following fields need to be set already:
 
@@ -238,9 +249,9 @@ def kpca(Y, k, params):
         Since the kernel will be called interally, the kernel parameters
         will also be updated (see kernel documentation).
 
-    Returns:
-    --------
-    Xhat : numpy array, shape (k, D)
+    Returns
+    -------
+    Xhat : numpy.ndarray, shape (k, D)
         NLDS state parameters.
     """
 
@@ -268,4 +279,4 @@ def kpca(Y, k, params):
 
     # normalize KPCA weight vectors
     normalize(params._A, params._l)
-    return params._A.T*params._kPar._kMat
+    return params._A.T.dot(params._kPar._kMat)
