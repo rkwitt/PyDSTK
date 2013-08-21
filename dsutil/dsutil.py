@@ -94,7 +94,7 @@ def renormalize(data, (newmin, newmax), oldrange=None):
     
     Parameters
     ----------
-    data : numpy array, shape = (N, D)
+    data : numpy.ndarray, shape = (N, D)
         Input data.
         
     (newmin, newmax) : tuple of min. and max. value
@@ -105,7 +105,7 @@ def renormalize(data, (newmin, newmax), oldrange=None):
     
     Returns
     -------
-    out : numpy array, shape = (N, D)
+    out : numpy.ndarray, shape = (N, D)
         Scaled output data.
     """
     
@@ -127,7 +127,7 @@ def showMovie(frames, movSz, fps=20, transpose=False):
     
     Parameters
     ----------
-    frames : numpy array, shape = (N, D)
+    frames : numpy.ndarray, shape = (N, D)
         Input data with N images as D-dimensional column vectors.
         
     movSz : tupe of (height, width, nFrames)
@@ -170,7 +170,7 @@ def loadDataFromVideoFile(inFile):
         
     Returns
     -------
-    dataMat : numpy array, shape = (N, D)
+    dataMat : numpy.ndarray, shape = (N, D)
         Output data matrix, where N is the number of pixel in each of the D
         frames.
         
@@ -235,7 +235,7 @@ def loadDataFromASCIIFile(inFile):
     
     Returns
     -------
-    dataMat : numpy array, shape = (N, D)
+    dataMat : numpy.ndarray, shape = (N, D)
         Output data matrix, where N = (width x height)
         
     dataSiz : tuple of (height, width, D)    
@@ -308,7 +308,7 @@ def loadDataFromIListFile(inFile):
         
     Returns
     -------
-    dataMat : numpy array, shape = (N, #images)
+    dataMat : numpy.ndarray, shape = (N, #images)
         Output data matrix, where N = (width x height)
         
     dataSiz : tuple of (height, width, #images)    
